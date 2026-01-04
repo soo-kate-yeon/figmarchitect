@@ -91,8 +91,9 @@ const codeConfig = {
     entryPoints: ['src/code.ts'],
     bundle: true,
     outfile: 'dist/code.js',
-    platform: 'node',
-    target: 'es2020',
+    platform: 'neutral',  // Figma sandbox is not Node.js
+    format: 'iife',       // Required: prevents dynamic import issues
+    target: 'es2017',
     logLevel: 'info',
     plugins: [inlineHTMLPlugin],
 };
@@ -103,7 +104,7 @@ const uiConfig = {
     bundle: true,
     outfile: 'dist/ui.js',
     platform: 'browser',
-    target: 'es2020',
+    target: 'es2017',
     format: 'iife', // Self-contained bundle, no module loaders
     minify: false, // Keep readable for debugging
     treeShaking: true,

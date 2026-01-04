@@ -13,14 +13,12 @@ figma.showUI(__html__, {
 figma.ui.onmessage = async (msg) => {
     if (msg.type === 'generate-tokens') {
         try {
-            // TODO: Implement token generation
-            const tokens = {
-                color: {},
-                typography: {},
-                spacing: {},
-                radius: {},
-                elevation: {},
-            };
+            // Import generator (dynamic import for Figma sandbox)
+            const { generateDesignTokens } = await import('./generators/index');
+
+            // Generate tokens from user input
+            const tokens = generateDesignTokens(msg.input);
+
 
             figma.ui.postMessage({
                 type: 'tokens-generated',
@@ -33,6 +31,7 @@ figma.ui.onmessage = async (msg) => {
             });
         }
     }
+
 
     if (msg.type === 'download-tokens') {
         // User will handle download in browser
