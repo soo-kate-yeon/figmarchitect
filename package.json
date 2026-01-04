@@ -1,0 +1,31 @@
+{
+  "name": "figmarchitect",
+  "version": "1.0.0",
+  "description": "Design System Token Generator - DTCG 2025.10 Format",
+  "main": "dist/code.js",
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "watch": "node esbuild.config.js --watch",
+    "test": "echo \"Tests not yet implemented\" && exit 0"
+  },
+  "keywords": [
+    "figma",
+    "plugin",
+    "design-tokens",
+    "dtcg"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.90.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "esbuild": "^0.19.11",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "culori": "^4.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
