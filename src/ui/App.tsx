@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { DesignSystemInput, FormFactor, BackgroundMode, ScaleRatio, RadiusStyle, GridUnit } from '../types';
+import { validateSystemName, validateHexColor, validateFontFamily, validateBaseFontSize, validateFormFactors, type FormErrors } from './utils/validation';
+import { ErrorMessage, LoadingOverlay, ErrorBanner } from './components/ErrorComponents';
 import './styles/main.css';
 
 function App() {
@@ -31,22 +33,64 @@ function App() {
     });
 
     const [generatedTokens, setGeneratedTokens] = useState<any>(null);
+    const [errors, setErrors] = useState<FormErrors>({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string>('');
 
     // Listen for messages from plugin
     React.useEffect(() => {
         window.onmessage = (event) => {
             const msg = event.data.pluginMessage;
             if (msg.type === 'tokens-generated') {
+                setIsLoading(false);
                 setGeneratedTokens(msg.tokens);
+                setErrorMessage('');
                 setStep(8); // Preview step
             }
             if (msg.type === 'error') {
-                alert(`Error: ${msg.message}`);
+                setIsLoading(false);
+                setErrorMessage(msg.message || 'An error occurred while generating tokens');
             }
         };
     }, []);
 
     const handleGenerate = () => {
+        // Clear previous errors
+        setErrorMessage('');
+        setErrors({});
+
+        // Validate all inputs
+        const newErrors: FormErrors = {};
+
+        const nameValidation = validateSystemName(input.systemName);
+        if (!nameValidation.isValid) newErrors.systemName = nameValidation.error;
+
+        const formFactorsValidation = validateFormFactors(input.formFactors);
+        if (!formFactorsValidation.isValid) newErrors.formFactors = formFactorsValidation.error;
+
+        const primaryColorValidation = validateHexColor(input.colors.primary);
+        if (!primaryColorValidation.isValid) newErrors.primaryColor = primaryColorValidation.error;
+
+        const backgroundColorValidation = validateHexColor(input.colors.background.default);
+        if (!backgroundColorValidation.isValid) newErrors.backgroundColor = backgroundColorValidation.error;
+
+        const primaryFontValidation = validateFontFamily(input.typography.fontFamily.primary);
+        if (!primaryFontValidation.isValid) newErrors.primaryFont = primaryFontValidation.error;
+
+        const baseFontSizeValidation = validateBaseFontSize(input.typography.baseFontSize);
+        if (!baseFontSizeValidation.isValid) newErrors.baseFontSize = baseFontSizeValidation.error;
+
+        // If there are errors, don't proceed
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            setErrorMessage('Please fix the validation errors before generating tokens');
+            return;
+        }
+
+        // Start loading
+        setIsLoading(true);
+
+        // Send to plugin
         parent.postMessage(
             {
                 pluginMessage: {
@@ -73,12 +117,16 @@ function App() {
 
     return (
         <div className="app">
+            <LoadingOverlay isLoading={isLoading} />
+
             <header className="header">
                 <h1>Design System Token Generator</h1>
                 <p>DTCG 2025.10 Format</p>
             </header>
 
             <main className="main">
+                <ErrorBanner message={errorMessage} />
+
                 {/* Step 1: System Name */}
                 {step === 1 && (
                     <div className="step">
@@ -88,9 +136,21 @@ function App() {
                             value={input.systemName}
                             onChange={(e) => setInput({ ...input, systemName: e.target.value })}
                             placeholder="My Design System"
-                            className="input"
+                            className={`input ${errors.systemName ? 'error' : ''}`}
                         />
-                        <button onClick={() => setStep(2)} className="btn-primary">
+                        <ErrorMessage message={errors.systemName} />
+                        <button
+                            onClick={() => {
+                                const validation = validateSystemName(input.systemName);
+                                if (validation.isValid) {
+                                    setErrors({ ...errors, systemName: undefined });
+                                    setStep(2);
+                                } else {
+                                    setErrors({ ...errors, systemName: validation.error });
+                                }
+                            }}
+                            className="btn-primary"
+                        >
                             Next
                         </button>
                     </div>
@@ -102,7 +162,7 @@ function App() {
                         <h2>Form Factors</h2>
                         <div className="checkbox-group">
                             {(['web', 'tablet', 'mobile'] as FormFactor[]).map((factor) => (
-                                <label key={factor} className="checkbox-label">
+                                <label key={factor} className={`checkbox-label ${errors.formFactors ? 'error' : ''}`}>
                                     <input
                                         type="checkbox"
                                         checked={input.formFactors.includes(factor)}
@@ -124,11 +184,23 @@ function App() {
                                 </label>
                             ))}
                         </div>
+                        <ErrorMessage message={errors.formFactors} />
                         <div className="button-group">
                             <button onClick={() => setStep(1)} className="btn-secondary">
                                 Back
                             </button>
-                            <button onClick={() => setStep(3)} className="btn-primary">
+                            <button
+                                onClick={() => {
+                                    const validation = validateFormFactors(input.formFactors);
+                                    if (validation.isValid) {
+                                        setErrors({ ...errors, formFactors: undefined });
+                                        setStep(3);
+                                    } else {
+                                        setErrors({ ...errors, formFactors: validation.error });
+                                    }
+                                }}
+                                className="btn-primary"
+                            >
                                 Next
                             </button>
                         </div>
@@ -150,7 +222,7 @@ function App() {
                                         colors: { ...input.colors, primary: e.target.value },
                                     })
                                 }
-                                className="color-input"
+                                className={`color-input ${errors.primaryColor ? 'error' : ''}`}
                             />
                             <input
                                 type="text"
@@ -161,8 +233,10 @@ function App() {
                                         colors: { ...input.colors, primary: e.target.value },
                                     })
                                 }
-                                className="input"
+                                className={`input ${errors.primaryColor ? 'error' : ''}`}
+                                placeholder="#000000"
                             />
+                            <ErrorMessage message={errors.primaryColor} />
                         </div>
                         <div className="form-group">
                             <label>Background Default (required)</label>
@@ -178,7 +252,7 @@ function App() {
                                         },
                                     })
                                 }
-                                className="color-input"
+                                className={`color-input ${errors.backgroundColor ? 'error' : ''}`}
                             />
                             <input
                                 type="text"
@@ -192,8 +266,10 @@ function App() {
                                         },
                                     })
                                 }
-                                className="input"
+                                className={`input ${errors.backgroundColor ? 'error' : ''}`}
+                                placeholder="#FFFFFF"
                             />
+                            <ErrorMessage message={errors.backgroundColor} />
                         </div>
                         <div className="form-group">
                             <label>Background Mode</label>
@@ -222,7 +298,23 @@ function App() {
                             <button onClick={() => setStep(2)} className="btn-secondary">
                                 Back
                             </button>
-                            <button onClick={() => setStep(4)} className="btn-primary">
+                            <button
+                                onClick={() => {
+                                    const primaryVal = validateHexColor(input.colors.primary);
+                                    const bgVal = validateHexColor(input.colors.background.default);
+                                    if (primaryVal.isValid && bgVal.isValid) {
+                                        setErrors({ ...errors, primaryColor: undefined, backgroundColor: undefined });
+                                        setStep(4);
+                                    } else {
+                                        setErrors({
+                                            ...errors,
+                                            primaryColor: primaryVal.error,
+                                            backgroundColor: bgVal.error
+                                        });
+                                    }
+                                }}
+                                className="btn-primary"
+                            >
                                 Next
                             </button>
                         </div>
@@ -247,9 +339,10 @@ function App() {
                                         },
                                     })
                                 }
-                                className="input"
+                                className={`input ${errors.primaryFont ? 'error' : ''}`}
                                 placeholder="Inter"
                             />
+                            <ErrorMessage message={errors.primaryFont} />
                         </div>
                         <div className="form-group">
                             <label>Base Font Size (px)</label>
@@ -262,10 +355,11 @@ function App() {
                                         typography: { ...input.typography, baseFontSize: Number(e.target.value) },
                                     })
                                 }
-                                className="input"
-                                min="12"
-                                max="20"
+                                className={`input ${errors.baseFontSize ? 'error' : ''}`}
+                                min="10"
+                                max="24"
                             />
+                            <ErrorMessage message={errors.baseFontSize} />
                         </div>
                         <div className="form-group">
                             <label>Scale Ratio</label>
@@ -296,7 +390,23 @@ function App() {
                             <button onClick={() => setStep(3)} className="btn-secondary">
                                 Back
                             </button>
-                            <button onClick={() => setStep(5)} className="btn-primary">
+                            <button
+                                onClick={() => {
+                                    const fontVal = validateFontFamily(input.typography.fontFamily.primary);
+                                    const sizeVal = validateBaseFontSize(input.typography.baseFontSize);
+                                    if (fontVal.isValid && sizeVal.isValid) {
+                                        setErrors({ ...errors, primaryFont: undefined, baseFontSize: undefined });
+                                        setStep(5);
+                                    } else {
+                                        setErrors({
+                                            ...errors,
+                                            primaryFont: fontVal.error,
+                                            baseFontSize: sizeVal.error
+                                        });
+                                    }
+                                }}
+                                className="btn-primary"
+                            >
                                 Next
                             </button>
                         </div>
@@ -351,11 +461,11 @@ function App() {
                             ))}
                         </div>
                         <div className="button-group">
-                            <button onClick={() => setStep(5)} className="btn-secondary">
+                            <button onClick={() => setStep(5)} className="btn-secondary" disabled={isLoading}>
                                 Back
                             </button>
-                            <button onClick={handleGenerate} className="btn-primary">
-                                Generate Tokens
+                            <button onClick={handleGenerate} className="btn-primary" disabled={isLoading}>
+                                {isLoading ? 'Generating...' : 'Generate Tokens'}
                             </button>
                         </div>
                     </div>
