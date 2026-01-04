@@ -37,3 +37,41 @@ export function ErrorBanner({ message }: ErrorBannerProps) {
         </div>
     );
 }
+
+interface ProgressBarProps {
+    currentStep: number;
+    totalSteps: number;
+}
+
+export function ProgressBar({ currentStep, totalSteps }: ProgressBarProps) {
+    const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+
+    return (
+        <div className="progress-container">
+            <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+            <div className="progress-steps">
+                {Array.from({ length: totalSteps }).map((_, i) => (
+                    <div
+                        key={i}
+                        className={`progress-dot ${i + 1 <= currentStep ? 'active' : ''} ${i + 1 === currentStep ? 'current' : ''}`}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+interface TooltipProps {
+    text: string;
+    children: React.ReactNode;
+}
+
+export function Tooltip({ text, children }: TooltipProps) {
+    return (
+        <div className="tooltip-container">
+            {children}
+            <div className="tooltip-content">{text}</div>
+            <span className="tooltip-icon">ⓘ</span>
+        </div>
+    );
+}

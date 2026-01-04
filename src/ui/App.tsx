@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { DesignSystemInput, FormFactor, BackgroundMode, ScaleRatio, RadiusStyle, GridUnit } from '../types';
 import { validateSystemName, validateHexColor, validateFontFamily, validateBaseFontSize, validateFormFactors, type FormErrors } from './utils/validation';
-import { ErrorMessage, LoadingOverlay, ErrorBanner } from './components/ErrorComponents';
+import { ErrorMessage, LoadingOverlay, ErrorBanner, ProgressBar, Tooltip } from './components/ErrorComponents';
 import { JSONPreview } from './components/JSONPreview';
 import './styles/main.css';
 
@@ -125,6 +125,12 @@ function App() {
                 <p>DTCG 2025.10 Format</p>
             </header>
 
+            {step <= 7 ? (
+                <ProgressBar currentStep={step} totalSteps={7} />
+            ) : (
+                <div style={{ height: '4px', background: 'var(--color-primary)' }} />
+            )}
+
             <main className="main">
                 <ErrorBanner message={errorMessage} />
 
@@ -136,6 +142,17 @@ function App() {
                             type="text"
                             value={input.systemName}
                             onChange={(e) => setInput({ ...input, systemName: e.target.value })}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    const validation = validateSystemName(input.systemName);
+                                    if (validation.isValid) {
+                                        setErrors({ ...errors, systemName: undefined });
+                                        setStep(2);
+                                    } else {
+                                        setErrors({ ...errors, systemName: validation.error });
+                                    }
+                                }
+                            }}
                             placeholder="My Design System"
                             className={`input ${errors.systemName ? 'error' : ''}`}
                         />
@@ -160,7 +177,11 @@ function App() {
                 {/* Step 2: Form Factors */}
                 {step === 2 && (
                     <div className="step">
-                        <h2>Form Factors</h2>
+                        <h2>
+                            <Tooltip text="Select which platforms this system should optimize for. This affects typography scale and spacing behavior.">
+                                Form Factors
+                            </Tooltip>
+                        </h2>
                         <div className="checkbox-group">
                             {(['web', 'tablet', 'mobile'] as FormFactor[]).map((factor) => (
                                 <label key={factor} className={`checkbox-label ${errors.formFactors ? 'error' : ''}`}>
@@ -213,7 +234,11 @@ function App() {
                     <div className="step">
                         <h2>Brand Colors</h2>
                         <div className="form-group">
-                            <label>Primary Color (required)</label>
+                            <label>
+                                <Tooltip text="The main brand color used for primary actions, links, and key focus areas.">
+                                    Primary Color (required)
+                                </Tooltip>
+                            </label>
                             <input
                                 type="color"
                                 value={input.colors.primary}
@@ -273,7 +298,11 @@ function App() {
                             <ErrorMessage message={errors.backgroundColor} />
                         </div>
                         <div className="form-group">
-                            <label>Background Mode</label>
+                            <label>
+                                <Tooltip text="Determines the tint level of adaptive background surfaces (Neutral, Brand Tinted, or Custom).">
+                                    Background Mode
+                                </Tooltip>
+                            </label>
                             <select
                                 value={input.colors.background.mode}
                                 onChange={(e) =>
@@ -327,7 +356,11 @@ function App() {
                     <div className="step">
                         <h2>Typography</h2>
                         <div className="form-group">
-                            <label>Primary Font Family</label>
+                            <label>
+                                <Tooltip text="The primary typeface used for body text and headings. Supports Google Fonts and System Fonts.">
+                                    Primary Font Family
+                                </Tooltip>
+                            </label>
                             <input
                                 type="text"
                                 value={input.typography.fontFamily.primary}
@@ -340,6 +373,22 @@ function App() {
                                         },
                                     })
                                 }
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        const fontVal = validateFontFamily(input.typography.fontFamily.primary);
+                                        const sizeVal = validateBaseFontSize(input.typography.baseFontSize);
+                                        if (fontVal.isValid && sizeVal.isValid) {
+                                            setErrors({ ...errors, primaryFont: undefined, baseFontSize: undefined });
+                                            setStep(5);
+                                        } else {
+                                            setErrors({
+                                                ...errors,
+                                                primaryFont: fontVal.error,
+                                                baseFontSize: sizeVal.error
+                                            });
+                                        }
+                                    }
+                                }}
                                 className={`input ${errors.primaryFont ? 'error' : ''}`}
                                 placeholder="Inter"
                             />
@@ -363,7 +412,11 @@ function App() {
                             <ErrorMessage message={errors.baseFontSize} />
                         </div>
                         <div className="form-group">
-                            <label>Scale Ratio</label>
+                            <label>
+                                <Tooltip text="A mathematical ratio used to determine the relative size of each typography level (e.g., H1, H2, Body).">
+                                    Scale Ratio
+                                </Tooltip>
+                            </label>
                             <select
                                 value={input.typography.scaleRatio}
                                 onChange={(e) =>
@@ -417,7 +470,11 @@ function App() {
                 {/* Step 5: Spacing */}
                 {step === 5 && (
                     <div className="step">
-                        <h2>Spacing Grid</h2>
+                        <h2>
+                            <Tooltip text="The baseline increment for all spacing, padding, and margin tokens. 8px is the industry standard.">
+                                Spacing Grid
+                            </Tooltip>
+                        </h2>
                         <div className="radio-group">
                             {([4, 8] as GridUnit[]).map((unit) => (
                                 <label key={unit} className="radio-label">
