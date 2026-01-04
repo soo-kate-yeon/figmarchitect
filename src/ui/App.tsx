@@ -116,6 +116,23 @@ function App() {
         URL.revokeObjectURL(url);
     };
 
+    // Resizing logic
+    const handleResizeMouseDown = (e: React.MouseEvent) => {
+        const onMouseMove = (moveEvent: MouseEvent) => {
+            const width = Math.max(600, moveEvent.clientX);
+            const height = Math.max(500, moveEvent.clientY);
+            parent.postMessage({ pluginMessage: { type: 'resize', width, height } }, '*');
+        };
+
+        const onMouseUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    };
+
     return (
         <div className="app">
             <LoadingOverlay isLoading={isLoading} />
@@ -545,6 +562,16 @@ function App() {
                     </div>
                 )}
             </main>
+
+            <div
+                className="resize-handle"
+                onMouseDown={handleResizeMouseDown}
+                title="Drag to resize"
+            >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M11 11L1 1M11 6L6 11M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+            </div>
         </div>
     );
 }

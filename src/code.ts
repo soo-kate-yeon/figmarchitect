@@ -3,14 +3,19 @@
 // ============================================
 
 // Show UI
+// Show UI with desktop-first defaults
 figma.showUI(__html__, {
-    width: 480,
-    height: 720,
+    width: 1000,
+    height: 800,
     title: 'Design System Token Generator',
 });
 
 // Listen for messages from UI
 figma.ui.onmessage = async (msg) => {
+    // Handle manual resizing from UI
+    if (msg.type === 'resize') {
+        figma.ui.resize(msg.width, msg.height);
+    }
     if (msg.type === 'generate-tokens') {
         try {
             // Import generator (dynamic import for Figma sandbox)

@@ -538,3 +538,32 @@ pre {
 .json-null {
   color: #93c5fd;
 }
+
+/* ============================================
+   RESIZE HANDLE
+   ============================================ */
+
+.resize-handle {
+  position: fixed;
+  bottom: 0px;
+  right: 0px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: nwse-resize;
+  color: #6b7280;
+  z-index: 10000;
+}
+
+.resize-handle:hover {
+  color: var(--color-primary);
+}
+
+.resize-handle svg {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  opacity: 0.6;
+}
