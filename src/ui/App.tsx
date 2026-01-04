@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import type { DesignSystemInput, FormFactor, BackgroundMode, ScaleRatio, RadiusStyle, GridUnit } from '../types';
 import { validateSystemName, validateHexColor, validateFontFamily, validateBaseFontSize, validateFormFactors, type FormErrors } from './utils/validation';
 import { ErrorMessage, LoadingOverlay, ErrorBanner } from './components/ErrorComponents';
+import { JSONPreview } from './components/JSONPreview';
 import './styles/main.css';
 
 function App() {
@@ -475,9 +476,7 @@ function App() {
                 {step === 8 && (
                     <div className="step">
                         <h2>Preview</h2>
-                        <pre className="preview">
-                            {JSON.stringify(generatedTokens, null, 2)}
-                        </pre>
+                        <JSONPreview data={generatedTokens} />
                         <div className="button-group">
                             <button onClick={() => setStep(1)} className="btn-secondary">
                                 Start Over

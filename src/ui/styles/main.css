@@ -262,7 +262,9 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .btn-primary:disabled,
@@ -274,4 +276,146 @@ body {
 .btn-primary:disabled:hover,
 .btn-secondary:disabled:hover {
   background: var(--color-primary);
+}
+
+/* ============================================
+   JSON PREVIEW PANEL (PHASE 3.2)
+   ============================================ */
+
+.json-preview-container {
+  background: #111827;
+  /* Darker bg for preview */
+  border-radius: var(--radius-md);
+  border: 1px solid #374151;
+  overflow: hidden;
+  margin-top: var(--spacing-lg);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', monospace;
+  font-size: 13px;
+  color: #e5e7eb;
+}
+
+.json-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+}
+
+.token-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  background: #374151;
+  color: #9ca3af;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #4b5563;
+}
+
+.badge.color {
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.badge.typo {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.badge.spacing {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.btn-copy {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-copy:hover {
+  filter: brightness(1.1);
+}
+
+.btn-copy.success {
+  background: #059669;
+}
+
+.json-content {
+  padding: var(--spacing-md);
+  max-height: 480px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+.json-section {
+  margin-bottom: 2px;
+}
+
+.json-section-header {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  user-select: none;
+}
+
+.json-section-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.collapse-icon {
+  display: inline-block;
+  width: 12px;
+  font-size: 10px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.json-section-body {
+  padding-left: 20px;
+  border-left: 1px solid #374151;
+  margin-left: 6px;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Syntax Highlighting */
+.json-key {
+  color: #93c5fd;
+}
+
+.json-string {
+  color: #fca5a5;
+}
+
+.json-number {
+  color: #6ee7b7;
+}
+
+.json-boolean {
+  color: #93c5fd;
+}
+
+.json-null {
+  color: #93c5fd;
 }
