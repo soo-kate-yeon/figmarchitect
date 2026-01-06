@@ -31,13 +31,14 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 }
 
 /**
- * Create color variables from color palette
+ * Create color variables from color palette and store in map
  */
 function createColorVariablesFromScale(
     collection: VariableCollection,
     modeId: string,
     scaleName: string,
-    scale: ColorScale
+    scale: ColorScale,
+    variableMap: Map<string, Variable>
 ): Variable[] {
     const variables: Variable[] = [];
 
@@ -46,16 +47,77 @@ function createColorVariablesFromScale(
         const variable = figma.variables.createVariable(variableName, collection, 'COLOR');
         variable.setValueForMode(modeId, hexToRgb(color.hex));
         variables.push(variable);
+        // Store in map for semantic references
+        variableMap.set(`${scaleName}.${step}`, variable);
     }
 
     return variables;
 }
 
 /**
- * Create all color variables from generated palettes
+ * Parse reference string like "{color.primitive.neutral.50}" to "neutral.50"
+ */
+function parseReference(ref: string): string | null {
+    const match = ref.match(/\{color\.primitive\.([^}]+)\}/);
+    return match ? match[1] : null;
+}
+
+/**
+ * Create semantic color variables with aliases to primitives
+ */
+function createSemanticVariables(
+    collection: VariableCollection,
+    modeId: string,
+    semantics: Record<string, unknown>,
+    primitiveMap: Map<string, Variable>,
+    prefix: string = ''
+): { created: number; errors: string[] } {
+    let created = 0;
+    const errors: string[] = [];
+
+    for (const [key, value] of Object.entries(semantics)) {
+        if (key.startsWith('$')) continue; // Skip $description, $type
+
+        const fullPath = prefix ? `${prefix}/${key}` : key;
+
+        if (typeof value === 'object' && value !== null) {
+            const typedValue = value as { $value?: string } | Record<string, unknown>;
+
+            // Check if this is a reference token
+            if ('$value' in typedValue && typeof typedValue.$value === 'string') {
+                const refPath = parseReference(typedValue.$value);
+                if (refPath) {
+                    const primitiveVar = primitiveMap.get(refPath);
+                    if (primitiveVar) {
+                        try {
+                            const semanticVar = figma.variables.createVariable(fullPath, collection, 'COLOR');
+                            const alias = figma.variables.createVariableAlias(primitiveVar);
+                            semanticVar.setValueForMode(modeId, alias);
+                            created++;
+                        } catch (e) {
+                            errors.push(`Failed to create ${fullPath}: ${e instanceof Error ? e.message : 'Unknown'}`);
+                        }
+                    } else {
+                        errors.push(`Primitive not found for ${fullPath}: ${refPath}`);
+                    }
+                }
+            } else {
+                // Nested object, recurse
+                const nested = createSemanticVariables(collection, modeId, typedValue as Record<string, unknown>, primitiveMap, fullPath);
+                created += nested.created;
+                errors.push(...nested.errors);
+            }
+        }
+    }
+
+    return { created, errors };
+}
+
+/**
+ * Create all color variables from generated palettes (primitive + semantic)
  */
 export async function createColorVariables(
-    tokens: { color?: { primitive?: Record<string, unknown> } },
+    tokens: { color?: { primitive?: Record<string, unknown>; semantic?: Record<string, unknown> } },
     collectionName: string = 'Colors'
 ): Promise<ApplyVariablesResult> {
     const result: ApplyVariablesResult = {
@@ -72,19 +134,19 @@ export async function createColorVariables(
             return result;
         }
 
-        // Create collection
-        const collection = figma.variables.createVariableCollection(collectionName);
-        result.collectionsCreated = 1;
+        // Create collection for primitives
+        const primitiveCollection = figma.variables.createVariableCollection(`${collectionName}/Primitive`);
+        result.collectionsCreated++;
+        const primitiveModeId = primitiveCollection.modes[0].modeId;
 
-        // Get default mode
-        const modeId = collection.modes[0].modeId;
+        // Map to store primitive variables for semantic references
+        const primitiveMap = new Map<string, Variable>();
 
         const primitives = tokens.color.primitive as Record<string, unknown>;
 
-        // Create variables for each color scale
+        // Create primitive variables
         for (const [scaleName, scale] of Object.entries(primitives)) {
             if (typeof scale === 'object' && scale !== null) {
-                // Convert scale entries to ColorScale format
                 const colorScale: ColorScale = {};
                 for (const [step, value] of Object.entries(scale as Record<string, unknown>)) {
                     if (typeof value === 'object' && value !== null) {
@@ -100,13 +162,30 @@ export async function createColorVariables(
                 }
 
                 const variables = createColorVariablesFromScale(
-                    collection,
-                    modeId,
+                    primitiveCollection,
+                    primitiveModeId,
                     scaleName,
-                    colorScale
+                    colorScale,
+                    primitiveMap
                 );
                 result.variablesCreated += variables.length;
             }
+        }
+
+        // Create semantic variables if they exist
+        if (tokens.color.semantic) {
+            const semanticCollection = figma.variables.createVariableCollection(`${collectionName}/Semantic`);
+            result.collectionsCreated++;
+            const semanticModeId = semanticCollection.modes[0].modeId;
+
+            const semanticResult = createSemanticVariables(
+                semanticCollection,
+                semanticModeId,
+                tokens.color.semantic as Record<string, unknown>,
+                primitiveMap
+            );
+            result.variablesCreated += semanticResult.created;
+            result.errors.push(...semanticResult.errors);
         }
 
         result.success = true;
