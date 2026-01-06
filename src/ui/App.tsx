@@ -551,13 +551,53 @@ function App() {
                     <div className="step">
                         <h2>Preview</h2>
                         <JSONPreview data={generatedTokens} />
-                        <div className="button-group">
+
+                        <div className="button-group" style={{ marginTop: '16px' }}>
                             <button onClick={() => setStep(1)} className="btn-secondary">
                                 Start Over
                             </button>
                             <button onClick={handleDownload} className="btn-primary">
                                 Download JSON
                             </button>
+                        </div>
+
+                        <div style={{ marginTop: '24px', padding: '16px', borderRadius: '8px', background: 'var(--color-surface-elevated, #f5f5f5)' }}>
+                            <h3 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600' }}>Apply to Figma</h3>
+                            <div className="button-group">
+                                <button
+                                    onClick={() => {
+                                        parent.postMessage({
+                                            pluginMessage: {
+                                                type: 'apply-to-figma',
+                                                tokens: generatedTokens,
+                                                systemName: input.systemName,
+                                            },
+                                        }, '*');
+                                    }}
+                                    className="btn-secondary"
+                                    disabled={isLoading}
+                                >
+                                    🎨 Apply Variables to Figma
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        parent.postMessage({
+                                            pluginMessage: {
+                                                type: 'create-text-styles',
+                                                tokens: generatedTokens,
+                                                formFactor: input.formFactors[0] || 'web',
+                                            },
+                                        }, '*');
+                                    }}
+                                    className="btn-secondary"
+                                    disabled={isLoading}
+                                >
+                                    📝 Create Text Styles
+                                </button>
+                            </div>
+                            <p style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-muted, #666)' }}>
+                                Variables: Color, Spacing, Radius | Text Styles: Typography
+                            </p>
                         </div>
                     </div>
                 )}
